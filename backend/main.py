@@ -1,15 +1,47 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import health_router, go_no_go_router, generate_router, knowledge_router, auth_router, bid_router, chat_router, sessions_router
+import asyncio
+
+from routes import (
+    health_router,
+    go_no_go_router,
+    generate_router,
+    knowledge_router,
+    auth_router,
+    bid_router,
+    chat_router,
+    sessions_router,
+)
+
 from database import init_db
 from seed import restore_db, start_dump_scheduler
 
 app = FastAPI()
 
-init_db()
-restore_db()
-start_dump_scheduler()
 
+# ✅ NON-BLOCKING STARTUP
+@app.on_event("startup")
+async def startup_event():
+    print("🚀 App startup initiated...")
+
+    # Run lightweight init immediately
+    init_db()
+
+    # Run heavy tasks in background (IMPORTANT)
+    asyncio.create_task(background_tasks())
+
+
+async def background_tasks():
+    try:
+        print("⚙️ Running background startup tasks...")
+        restore_db()
+        start_dump_scheduler()
+        print("✅ Background tasks completed")
+    except Exception as e:
+        print(f"❌ Error in background tasks: {e}")
+
+
+# ✅ CORS CONFIG
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -24,6 +56,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ✅ ROUTES
 app.include_router(health_router)
 app.include_router(go_no_go_router, prefix="/api/v1")
 app.include_router(generate_router, prefix="/api/v1")
@@ -34,6 +68,13 @@ app.include_router(chat_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
 
 
+# ✅ ROOT ENDPOINT (for health check)
+@app.get("/")
+async def health_check():
+    return {"status": "running"}
+
+
+# ✅ EXISTING ROOT
 @app.get("/api/v1/")
 async def root():
     return {"message": "BidAgent API"}
