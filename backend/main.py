@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 
-# ✅ FIXED IMPORTS (IMPORTANT)
+# ✅ FIXED IMPORTS
 from backend.routes import (
     health_router,
     go_no_go_router,
@@ -24,34 +24,24 @@ app = FastAPI()
 @app.on_event("startup")
 async def startup_event():
     print("🚀 App startup initiated...")
-
-    # lightweight init
     init_db()
-
-    # heavy tasks in background
     asyncio.create_task(background_tasks())
 
 
 async def background_tasks():
     try:
-        print("⚙️ Running background startup tasks...")
+        print("⚙️ Running background tasks...")
         restore_db()
         start_dump_scheduler()
-        print("✅ Background tasks completed")
+        print("✅ Background tasks done")
     except Exception as e:
-        print(f"❌ Error in background tasks: {e}")
+        print(f"❌ Background error: {e}")
 
 
 # ✅ CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://bidagent.vercel.app",
-        "https://bidagent-3k30s8nc5-gitmjs-projects.vercel.app",
-        "https://bidagent-git-main-gitmjs-projects.vercel.app",
-        "http://localhost:5173",
-        "http://localhost:5174",
-    ],
+    allow_origins=["*"],  # simplify for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,13 +59,7 @@ app.include_router(chat_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
 
 
-# ✅ ROOT HEALTH CHECK (IMPORTANT for Azure)
+# ✅ HEALTH CHECK (CRITICAL for Azure)
 @app.get("/")
-async def health_check():
+async def health():
     return {"status": "running"}
-
-
-# ✅ EXISTING ROOT
-@app.get("/api/v1/")
-async def root():
-    return {"message": "BidAgent API"}
