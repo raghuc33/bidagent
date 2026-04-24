@@ -18,7 +18,6 @@ from seed import restore_db, start_dump_scheduler
 
 app = FastAPI()
 
-
 # ✅ NON-BLOCKING STARTUP
 @app.on_event("startup")
 async def startup_event():
