@@ -3,41 +3,59 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-# Load env variables
+# ✅ FIXED IMPORTS
+from backend.routes.health import router as health_router
+from backend.routes.go_no_go import router as go_no_go_router
+from backend.routes.generate import router as generate_router
+from backend.routes.knowledge import router as knowledge_router
+from backend.routes.auth import router as auth_router
+from backend.routes.bid import router as bid_router
+from backend.routes.chat import router as chat_router
+from backend.routes.sessions import router as sessions_router
+
 load_dotenv()
 
 app = FastAPI()
 
 # -----------------------------------------------------------------------------
-# CORS CONFIGURATION
+# CORS
 # -----------------------------------------------------------------------------
 
 def get_allowed_origins():
     env_origins = os.getenv("CORS_ORIGINS")
 
     if env_origins:
-        return [origin.strip() for origin in env_origins.split(",")]
+        return [o.strip() for o in env_origins.split(",")]
 
     return [
         "https://bidagent-frontend-raghu-ci.azurestaticapps.net",
         "https://bidagent-backend1.azurewebsites.net",
         "http://localhost:3000",
-        "http://127.0.0.1:3000",
     ]
-
-
-allow_origins = get_allowed_origins()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins,
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # -----------------------------------------------------------------------------
-# 🔥 LAZY LOADING: MODEL
+# INCLUDE ROUTERS
+# -----------------------------------------------------------------------------
+
+app.include_router(health_router)
+app.include_router(go_no_go_router)
+app.include_router(generate_router)
+app.include_router(knowledge_router)
+app.include_router(auth_router)
+app.include_router(bid_router)
+app.include_router(chat_router)
+app.include_router(sessions_router)
+
+# -----------------------------------------------------------------------------
+# LAZY LOADING (MODEL)
 # -----------------------------------------------------------------------------
 
 _model = None
@@ -45,105 +63,27 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        print("🔄 Loading SentenceTransformer model...")
-
+        print("🔄 Loading model...")
         from sentence_transformers import SentenceTransformer
         _model = SentenceTransformer("all-MiniLM-L6-v2")
-
-        print("✅ Model loaded successfully")
-
     return _model
 
-
 # -----------------------------------------------------------------------------
-# 🔥 LAZY LOADING: CHROMADB
-# -----------------------------------------------------------------------------
-
-_chroma_client = None
-_collection = None
-
-def get_chroma_collection():
-    global _chroma_client, _collection
-
-    if _chroma_client is None:
-        print("🔄 Initializing ChromaDB...")
-
-        import chromadb
-        _chroma_client = chromadb.Client()
-
-        print("✅ ChromaDB client initialized")
-
-    if _collection is None:
-        print("🔄 Creating / loading collection...")
-
-        _collection = _chroma_client.get_or_create_collection(name="documents")
-
-        print("✅ Collection ready")
-
-    return _collection
-
-
-# -----------------------------------------------------------------------------
-# ROUTES
+# ROOT
 # -----------------------------------------------------------------------------
 
 @app.get("/")
 def root():
-    return {
-        "status": "ok",
-        "service": "bidagent-backend",
-        "message": "Backend running 🚀"
-    }
-
+    return {"status": "ok"}
 
 @app.get("/health")
 def health():
     return {"status": "healthy"}
 
-
-@app.get("/api/test")
-def test():
-    return {"message": "CORS working ✅"}
-
-
 # -----------------------------------------------------------------------------
-# 🔥 TEST ENDPOINT (FOR MODEL)
-# -----------------------------------------------------------------------------
-
-@app.get("/api/embed")
-def embed_test(text: str = "hello world"):
-    model = get_model()
-    embedding = model.encode(text)
-
-    return {
-        "text": text,
-        "embedding_length": len(embedding)
-    }
-
-
-# -----------------------------------------------------------------------------
-# 🔥 TEST ENDPOINT (FOR CHROMA)
-# -----------------------------------------------------------------------------
-
-@app.get("/api/chroma-test")
-def chroma_test():
-    collection = get_chroma_collection()
-
-    return {
-        "message": "ChromaDB initialized successfully",
-        "collection_name": collection.name
-    }
-
-
-# -----------------------------------------------------------------------------
-# STARTUP LOGS
+# STARTUP LOG
 # -----------------------------------------------------------------------------
 
 @app.on_event("startup")
-def startup_log():
-    print("🚀 Backend started successfully")
-    print("🌐 Allowed CORS origins:")
-    for origin in allow_origins:
-        print(f" - {origin}")
-
-    print("⚠️ Lazy loading enabled (models not loaded at startup)")
+def startup():
+    print("🚀 Backend started")
