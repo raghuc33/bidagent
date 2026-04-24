@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: bidagent-api      # ← Change to your App Service name
+  AZURE_WEBAPP_NAME: bidagent-backend1      # ← Change to your App Service name
   PYTHON_VERSION: "3.11"
 
 jobs:
