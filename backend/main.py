@@ -4,17 +4,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 # -----------------------------------------------------------------------------
-# ✅ FIXED IMPORTS (CRITICAL)
+# ✅ FIXED IMPORTS FOR AZURE (IMPORTANT)
 # -----------------------------------------------------------------------------
 
-from backend.routes.health import router as health_router
-from backend.routes.go_no_go import router as go_no_go_router
-from backend.routes.generate import router as generate_router
-from backend.routes.knowledge import router as knowledge_router
-from backend.routes.auth import router as auth_router
-from backend.routes.bid import router as bid_router
-from backend.routes.chat import router as chat_router
-from backend.routes.sessions import router as sessions_router
+from routes.health import router as health_router
+from routes.go_no_go import router as go_no_go_router
+from routes.generate import router as generate_router
+from routes.knowledge import router as knowledge_router
+from routes.auth import router as auth_router
+from routes.bid import router as bid_router
+from routes.chat import router as chat_router
+from routes.sessions import router as sessions_router
 
 # -----------------------------------------------------------------------------
 # INIT
