@@ -15,6 +15,7 @@ from backend.routes.sessions import router as sessions_router
 
 load_dotenv()
 
+
 app = FastAPI()
 
 # -----------------------------------------------------------------------------
