@@ -5,11 +5,6 @@ on:
     branches: [main]
     paths:
       - "backend/**"
-  workflow_dispatch:
-
-env:
-  AZURE_WEBAPP_NAME: bidagent-backend1      # ← Change to your App Service name
-  PYTHON_VERSION: "3.11"
 
 jobs:
   build-and-deploy:
@@ -21,30 +16,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: "pip"
-          cache-dependency-path: backend/requirements.txt
+          python-version: "3.11"
 
       - name: Install dependencies
-        working-directory: backend
         run: |
-          python -m pip install --upgrade pip
+          cd backend
           pip install -r requirements.txt
 
-      - name: Create deployment package
-        working-directory: backend
-        run: |
-          zip -r ../deploy.zip . \
-            -x "*.pyc" \
-            -x "__pycache__/*" \
-            -x "chroma_data/*" \
-            -x "*.db" \
-            -x "test_data/*" \
-            -x ".env"
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+      - name: Deploy to Azure
+        uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-name: bidagent-backend1
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: deploy.zip
+          package: backend   # 🔥 CRITICAL FIX
