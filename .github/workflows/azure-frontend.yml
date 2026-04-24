@@ -17,17 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🔥 Install dependencies
+      # ✅ Install dependencies
       - name: Install dependencies
         run: npm install
         working-directory: frontend
 
-      # 🔥 Build explicitly
+      # ✅ Build (creates dist/)
       - name: Build frontend
         run: npm run build
         working-directory: frontend
 
-      # 🚀 Deploy
+      # 🚀 Deploy WITHOUT rebuilding
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -36,3 +36,4 @@ jobs:
           action: "upload"
           app_location: "/frontend"
           output_location: "dist"
+          skip_app_build: true   # 🔥 IMPORTANT
