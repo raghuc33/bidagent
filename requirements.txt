@@ -12,3 +12,4 @@ python-jose[cryptography]==3.3.0
 python-dotenv==1.0.1
 pytest==8.0.0
 pytest-asyncio==0.23.3
+torch==2.2.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
