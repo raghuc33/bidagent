@@ -1,79 +1,81 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import asyncio
+from dotenv import load_dotenv
 
-from routes import (
-    health_router,
-    go_no_go_router,
-    generate_router,
-    knowledge_router,
-    auth_router,
-    bid_router,
-    chat_router,
-    sessions_router,
-)
-
-from database import init_db
-from seed import restore_db, start_dump_scheduler
+# Load env variables (local dev)
+load_dotenv()
 
 app = FastAPI()
 
-# ✅ NON-BLOCKING STARTUP
-@app.on_event("startup")
-async def startup_event():
-    print("🚀 App startup initiated...")
+# -----------------------------------------------------------------------------
+# CORS CONFIGURATION
+# -----------------------------------------------------------------------------
 
-    # Run lightweight init immediately
-    init_db()
+def get_allowed_origins():
+    env_origins = os.getenv("CORS_ORIGINS")
 
-    # Run heavy tasks in background (IMPORTANT)
-    asyncio.create_task(background_tasks())
+    if env_origins:
+        return [origin.strip() for origin in env_origins.split(",")]
+
+    # ✅ Default (Azure + optional dual hosting + local)
+    return [
+        # Azure Static Web App (Frontend)
+        "https://bidagent-frontend-raghu-ci.azurestaticapps.net",
+
+        # Azure App Service (Backend)
+        "https://bidagent-backend1.azurewebsites.net",
+
+        # Optional (REMOVE if not using)
+        "https://your-app.vercel.app",
+        "https://your-app.onrender.com",
+
+        # Local development
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
 
-async def background_tasks():
-    try:
-        print("⚙️ Running background startup tasks...")
-        restore_db()
-        start_dump_scheduler()
-        print("✅ Background tasks completed")
-    except Exception as e:
-        print(f"❌ Error in background tasks: {e}")
+allow_origins = get_allowed_origins()
 
-
-# ✅ CORS CONFIG
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://bidagent.vercel.app",
-        "https://bidagent-3k30s8nc5-gitmjs-projects.vercel.app",
-        "https://bidagent-git-main-gitmjs-projects.vercel.app",
-        "http://localhost:5173",
-        "http://localhost:5174",
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# -----------------------------------------------------------------------------
+# ROUTES
+# -----------------------------------------------------------------------------
 
-# ✅ ROUTES
-app.include_router(health_router)
-app.include_router(go_no_go_router, prefix="/api/v1")
-app.include_router(generate_router, prefix="/api/v1")
-app.include_router(knowledge_router, prefix="/api/v1")
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(bid_router, prefix="/api/v1")
-app.include_router(chat_router, prefix="/api/v1")
-app.include_router(sessions_router, prefix="/api/v1")
-
-
-# ✅ ROOT ENDPOINT (for health check)
 @app.get("/")
-async def health_check():
-    return {"status": "running"}
+def root():
+    return {
+        "status": "ok",
+        "service": "bidagent-backend",
+        "allowed_origins": allow_origins
+    }
 
 
-# ✅ EXISTING ROOT
-@app.get("/api/v1/")
-async def root():
-    return {"message": "BidAgent API"}
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+
+
+@app.get("/api/test")
+def test():
+    return {"message": "CORS working ✅"}
+
+
+# -----------------------------------------------------------------------------
+# STARTUP LOGS (VISIBLE IN AZURE LOG STREAM)
+# -----------------------------------------------------------------------------
+
+@app.on_event("startup")
+def startup_log():
+    print("🚀 Backend started successfully")
+    print("🌐 Allowed CORS origins:")
+    for origin in allow_origins:
+        print(f" - {origin}")
